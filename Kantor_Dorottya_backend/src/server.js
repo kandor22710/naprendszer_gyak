@@ -1,14 +1,14 @@
+
 const express = require("express");
 const db = require("./db");
+const cors = require("cors");
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-    res.send("A Naprendszer backend szervere működik!");
-});
-
+// Bolygótípusok lekérdezése
 app.get("/api/tipusok", async (req, res) => {
     try {
         const [tipusok] = await db.query(
@@ -18,20 +18,17 @@ app.get("/api/tipusok", async (req, res) => {
         res.status(200).json(tipusok);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Adatbázishiba" });
+        res.status(500).json({
+            error: "Adatbázishiba"
+        });
     }
 });
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`A szerver fut: http://localhost:${PORT}`);
-});
-
+// Bolygók lekérdezése
 app.get("/api/bolygok", async (req, res) => {
     try {
         const [bolygok] = await db.query(`
-            SELECT 
+            SELECT
                 bolygok.*,
                 bolygo_tipusok.tipus_neve
             FROM bolygok
@@ -42,10 +39,13 @@ app.get("/api/bolygok", async (req, res) => {
         res.status(200).json(bolygok);
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Adatbázishiba" });
+        res.status(500).json({
+            error: "Adatbázishiba"
+        });
     }
 });
 
+// Bolygó törlése
 app.delete("/api/torles", async (req, res) => {
     try {
         const { id } = req.body;
@@ -79,6 +79,7 @@ app.delete("/api/torles", async (req, res) => {
     }
 });
 
+// Új bolygó létrehozása
 app.post("/api/ujbolygo", async (req, res) => {
     try {
         const {
@@ -92,7 +93,15 @@ app.post("/api/ujbolygo", async (req, res) => {
             leiras
         } = req.body;
 
-        if (!neve || !neve.trim()) {
+        if (
+            typeof neve !== "string" || !neve.trim() ||
+            tipus_id === undefined || tipus_id === null ||
+            tomeg === undefined || tomeg === null ||
+            egyenlitori_sugar === undefined || egyenlitori_sugar === null ||
+            holdak_szama === undefined || holdak_szama === null ||
+            nap_tavolsag === undefined || nap_tavolsag === null ||
+            typeof leiras !== "string" || !leiras.trim()
+        ) {
             return res.status(400).json({
                 error: "A név megadása kötelező"
             });
@@ -104,7 +113,7 @@ app.post("/api/ujbolygo", async (req, res) => {
             holdak_szama, nap_tavolsag, fold_tavolsag, leiras)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-                neve,
+                neve.trim(),
                 tipus_id,
                 tomeg,
                 egyenlitori_sugar,
@@ -126,4 +135,11 @@ app.post("/api/ujbolygo", async (req, res) => {
             error: "Adatbázishiba"
         });
     }
+});
+
+// Szerver indítása
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log(`A szerver fut: http://localhost:${PORT}`);
 });
